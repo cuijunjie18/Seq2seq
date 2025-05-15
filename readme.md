@@ -16,3 +16,5 @@ author：cuijunjie18
 - 学会存储python中对象的方法，可以使用pickle库、joblib库的，具体两种使用在
   save_vocab1.py与save_vocab2.py
 - 提高了pytorch使用熟练度，提高了对NLP简单任务整体流程的理解
+- embedding,即嵌入层，是一种取代one_hot的好方法，尤其当vocab_size非常大时.
+  输入(batch_size,step) -> (batch_size,step,embedding_size)

@@ -70,7 +70,7 @@ def train(net : nn.Sequential,data_iter : data.DataLoader,lr,tgt_vocab : Vocab,n
             X,X_valid_len,Y,Y_valid_len = [x.to(device) for x in batch]
             bos = torch.tensor([tgt_vocab['<bos>']] * Y.shape[0],
                           device=device).reshape(-1, 1)
-            dec_input = torch.cat([bos, Y[:, :-1]], 1)  # 强制教学(用当前时间步的实际标签作为decoder的输入)
+            dec_input = torch.cat([bos, Y[:, :-1]], 1)  # 强制教学(用当前时间步的实际标签作为decoder的输入),通常去掉最后<eos>，与label错开一个step
             Y_hat,_ = net(X,dec_input,X_valid_len)
             l = loss(Y_hat,Y,Y_valid_len)
             l.sum().backward()

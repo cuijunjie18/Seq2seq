@@ -338,7 +338,7 @@ class Seq2SeqEncoder(Encoder): #@save
                  dropout = 0,**kwargs):
         super(Seq2SeqEncoder,self).__init__(**kwargs)
         # 定义嵌入层
-        self.embedding = nn.Embedding(vocab_size,embed_size)
+        self.embedding = nn.Embedding(vocab_size,embed_size) # 取代one_hot,vocab_size即输入X的范围
         self.rnn = nn.GRU(embed_size,num_hiddens,num_layers,dropout = dropout)
 
     def forward(self,X:torch.Tensor,*args):
