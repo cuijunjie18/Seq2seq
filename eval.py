@@ -4,7 +4,7 @@ from net_frame import *
 import joblib
 
 # 加载模型
-index = 11
+index = 12
 load_prefix = os.path.join('results','exp' + str(index))
 model_path = os.path.join(load_prefix,'model','seq2seq.pt')
 net = torch.load(model_path,weights_only = False)
@@ -18,8 +18,8 @@ print(len(src_vocab),len(tgt_vocab))
 # 构建对话
 device = try_gpu()
 num_steps = 20
-input_str = "I admire you."
-reply = predict_seq2seq(net,input_str,src_vocab,tgt_vocab,num_steps,device)[0]
+input_str = "齐静春经典台词是什么"
+reply = predict_seq2seq(net,input_str,src_vocab,tgt_vocab,num_steps,device,token = 'char')[0]
 print(reply)
 
 # # en-cn的测试

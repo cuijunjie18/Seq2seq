@@ -5,6 +5,7 @@ from net_frame import *
 import json
 import os
 import joblib
+from tqdm import tqdm
 
 def get_index():
     with open("exp_num.json","r",encoding = 'utf-8') as file:
@@ -65,7 +66,8 @@ def train(net : nn.Sequential,data_iter : data.DataLoader,lr,tgt_vocab : Vocab,n
     for i in range(num_epochs):
         loss_epoch = 0
         tokens_nums = 0
-        for batch in data_iter:
+        loop = tqdm(data_iter,total = len(data_iter))
+        for batch in loop:
             optimizer.zero_grad()
             X,X_valid_len,Y,Y_valid_len = [x.to(device) for x in batch]
             bos = torch.tensor([tgt_vocab['<bos>']] * Y.shape[0],
@@ -79,24 +81,45 @@ def train(net : nn.Sequential,data_iter : data.DataLoader,lr,tgt_vocab : Vocab,n
             # 累计损失
             loss_epoch += l.sum().item()
             tokens_nums += Y_valid_len.sum()
+            loop.set_description(f'Epoch [{i + 1}/{num_epochs}]')
+            loop.set_postfix({"LOSS" : loss_epoch / tokens_nums,"lr" : "{:e}".format(lr)})
+        # if (loss_epoch / tokens_nums < 0.01):
+        print("====================================================================")
+        print(predict_seq2seq(net,"你是谁",src_vocab,tgt_vocab,num_steps,device,token = 'char')[0])
+        print(predict_seq2seq(net,"什么是AI",src_vocab,tgt_vocab,num_steps,device,token = 'char')[0])
         loss_plt.append(loss_epoch / tokens_nums)
-        print(f"{i + 1}th epoch finish!")
     return loss_plt
 
 # 定义超参数
-batch_size,num_steps = 64,20
-embed_size, num_hiddens, num_layers, dropout = 128, 128, 4, 0.2
-lr, num_epochs, device = 0.005, 300, d2l.try_gpu()
+batch_size,num_steps = 1,20
+embed_size, num_hiddens, num_layers, dropout = 128, 128, 4, 0
+lr, num_epochs, device = 0.005, 100, d2l.try_gpu()
 
 # 获取数据
-# train_iter,src_vocab,tgt_vocab = load_train_data(batch_size,num_steps)
-train_iter,src_vocab,tgt_vocab = load_data_nmt(batch_size,num_steps,data_path = 'en-cn/cmn.txt')
+train_iter,src_vocab,tgt_vocab = load_train_data(batch_size,num_steps)
+# train_iter,src_vocab,tgt_vocab = load_data_nmt(batch_size,num_steps,data_path = 'en-cn/cmn.txt')
 print(len(src_vocab),len(tgt_vocab))
 
 # 定义net
 encoder = Seq2SeqEncoder(len(src_vocab),embed_size,num_hiddens,num_layers,dropout = dropout)
 decoder = Seq2SeqDecoder(len(tgt_vocab),embed_size,num_hiddens,num_layers,dropout = dropout)
+# decoder = Seq2SeqAttentionDecoder(len(tgt_vocab),embed_size,num_hiddens,num_layers,dropout = dropout)
 net = EncoderDecoder(encoder,decoder)
+
+# # 检查随机性
+# for batch in train_iter:
+#     print("====================================")
+#     X = [i.item() for x in batch[0] for i in x]
+#     # Y = [i.item() for y in batch[2] for i in y]
+#     print(src_vocab.to_tokens(X))
+#     print(X)
+#     # print(tgt_vocab.to_tokens(Y))
+# src_sentence = "你是谁"
+# X = src_sentence.lower().split(' ')
+# print(X,type(X))
+# predict_seq2seq(net,"你是谁",src_vocab,tgt_vocab,num_steps,device)[0]
+# print(predict_seq2seq(net,"什么是AI",src_vocab,tgt_vocab,num_steps,device)[0])
+# exit(0)
 
 # 训练
 loss_plt = train(net,train_iter,lr,tgt_vocab,num_epochs)
@@ -123,4 +146,10 @@ joblib.dump(src_vocab,os.path.join(save_prefix,'vocabs','src_vocab.joblib'))
 joblib.dump(tgt_vocab,os.path.join(save_prefix,'vocabs','tgt_vocab.joblib'))
 # update_index()
 
-    
+# 检查随机性
+for batch in train_iter:
+    print("====================================")
+    X = [i.item() for x in batch[0] for i in x]
+    Y = [i.item() for y in batch[2] for i in y]
+    print(src_vocab.to_tokens(X))
+    print(tgt_vocab.to_tokens(Y))

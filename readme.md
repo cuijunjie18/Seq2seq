@@ -8,7 +8,23 @@ author：cuijunjie18
 
 ### 模型说明
 
-模型采用编码器——解码器架构，最终的训练效果较差
+模型采用编码器——解码器架构.~~最终的训练效果较差~~
+
+**效果差的原因**：predict函数中对输入的src_string处理与训练时不一致，训练为中文，按字tokenlize，而predict却是按word分，故修改net_frame中的predict函数，如下
+
+```py
+def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps,
+                    device, token = 'word',save_attention_weights=False): #@save
+    """序列到序列模型的预测"""
+    # 在预测时将net设置为评估模式
+    net.eval()
+    if token == 'word':
+        src_tokens = src_vocab[src_sentence.lower().split(' ')] + [src_vocab['<eos>']] # 单词级别token
+    else:
+        src_tokens = src_vocab[list(src_sentence)] + [src_vocab['<eos>']]
+```
+
+即添加了一个指定数据处理的方式，token参数.
 
 ### 项目收获
 
