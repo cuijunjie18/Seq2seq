@@ -8,7 +8,8 @@ author：cuijunjie18
 
 ### 模型说明
 
-模型采用编码器——解码器架构.~~最终的训练效果较差~~
+#### 中文对话
+模型采用编码器——解码器架构.~~中文对话模型最终的训练效果较差~~
 
 **效果差的原因**：predict函数中对输入的src_string处理与训练时不一致，训练为中文，按字tokenlize，而predict却是按word分，故修改net_frame中的predict函数，如下
 
@@ -25,6 +26,16 @@ def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps,
 ```
 
 即添加了一个指定数据处理的方式，token参数.
+
+#### 英语翻译为中文
+
+使用一般Seq模型、加上注意力、使用transformer效果均不理想，问题待查找. 2025.5.27
+
+发现问题：predict的时候对标点的处理也要将标点与word分开!!!，否则 <word>+标点被认为是不在vocab里的，导致token = <unk>!
+
+使用注意力的模型效果不错！
+
+使用transformer效果却不太好，问题待查找.
 
 ### 项目收获
 

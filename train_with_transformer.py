@@ -82,50 +82,51 @@ def train(net : nn.Sequential,data_iter : data.DataLoader,lr,tgt_vocab : Vocab,n
             tokens_nums += Y_valid_len.sum().item()
             loop.set_description(f'Epoch [{i + 1}/{num_epochs}]')
             loop.set_postfix({"LOSS" : loss_epoch / tokens_nums,"lr" : "{:e}".format(lr)})
+        # if (loss_epoch / tokens_nums < 0.01):
         # print("====================================================================")
-        # print(predict_seq2seq(net,"Wait!",src_vocab,tgt_vocab,num_steps,device,token = 'word')[0])
-        # print(0)
+        # print(predict_seq2seq(net,"你是谁",src_vocab,tgt_vocab,num_steps,device,token = 'char')[0])
+        # print(predict_seq2seq(net,"什么是AI",src_vocab,tgt_vocab,num_steps,device,token = 'char')[0])
         loss_plt.append(loss_epoch / tokens_nums)
     return loss_plt
 
 # 定义超参数
-batch_size,num_steps = 64,20
-embed_size, num_hiddens, num_layers, dropout = 1028, 1028, 4, 0.05
-lr, num_epochs, device = 0.0005, 100, d2l.try_gpu()
+# batch_size,num_steps = 64,20
+# embed_size, num_hiddens, num_layers, dropout = 1028, 1028, 4, 0.05
+# lr, num_epochs, device = 0.0005, 100, d2l.try_gpu()
+num_hiddens, num_layers, dropout, batch_size, num_steps = 32, 2, 0.1, 64, 20
+lr, num_epochs, device = 0.005, 100, try_gpu(i = 0)
+ffn_num_input, ffn_num_hiddens, num_heads = 32, 64, 4
+key_size, query_size, value_size = 32, 32, 32
+norm_shape = [32]
 
 # 获取数据
 # train_iter,src_vocab,tgt_vocab = load_train_data(batch_size,num_steps)
 train_iter,src_vocab,tgt_vocab = load_data_nmt(batch_size,num_steps,data_path = 'en-cn/cmn.txt')
-print(len(src_vocab),len(tgt_vocab))
 
-# 定义net
-encoder = Seq2SeqEncoder(len(src_vocab),embed_size,num_hiddens,num_layers,dropout = dropout)
-# decoder = Seq2SeqDecoder(len(tgt_vocab),embed_size,num_hiddens,num_layers,dropout = dropout)
-decoder = Seq2SeqAttentionDecoder(len(tgt_vocab),embed_size,num_hiddens,num_layers,dropout = dropout)
-net = EncoderDecoder(encoder,decoder)
+# 构建模型
+encoder = TransformerEncoder(
+    len(src_vocab), key_size, query_size, value_size, num_hiddens,
+    norm_shape, ffn_num_input, ffn_num_hiddens, num_heads,
+    num_layers, dropout)
+decoder = TransformerDecoder(
+    len(tgt_vocab), key_size, query_size, value_size, num_hiddens,
+    norm_shape, ffn_num_input, ffn_num_hiddens, num_heads,
+    num_layers, dropout)
+net = EncoderDecoder(encoder, decoder) # 使用重载
 
-# 检查随机性
+# # # 检查随机性
 # for batch in train_iter:
 #     print("====================================")
 #     X = [i.item() for x in batch[0] for i in x]
 #     Y = [i.item() for y in batch[2] for i in y]
 #     print(src_vocab.to_tokens(X))
 #     print(tgt_vocab.to_tokens(Y))
+#     # break
 
-# for i in range(len(src_vocab)):
-#     print(src_vocab.to_tokens(i),end = ' ')
-# print('\n',end = ' ')
-
-# src_sentence = "Hi. Run!" # 发现问题了，标点要空格
-# print(src_sentence.lower().split(' '))
-# print(src_vocab[src_sentence.lower().split(' ')])
-# # net = net.to(device)
-# # print(predict_seq2seq(net,"Hi. Run!",src_vocab,tgt_vocab,num_steps,device,token = 'word')[0])
-# # print(predict_seq2seq(net,"Wait!",src_vocab,tgt_vocab,num_steps,device,token = 'word')[0])
 # exit(0)
 
 # 训练
-loss_plt = train(net,train_iter,lr,tgt_vocab,num_epochs)
+loss_plt = train(net,train_iter,lr,tgt_vocab,num_epochs,device)
 
 # 获取存储路径
 index = get_index()
@@ -140,7 +141,7 @@ plt.savefig(os.path.join(save_prefix,'loss_result.png'))
 plt.show()
 
 # 保存模型
-save_path = os.path.join(save_prefix,'model','seq2seq.pt')
+save_path = os.path.join(save_prefix,'model','seq2seq_transformer.pt')
 torch.save(net,save_path)
 print(f"model save in {save_path} successfully!")
 
@@ -148,11 +149,3 @@ print(f"model save in {save_path} successfully!")
 joblib.dump(src_vocab,os.path.join(save_prefix,'vocabs','src_vocab.joblib'))
 joblib.dump(tgt_vocab,os.path.join(save_prefix,'vocabs','tgt_vocab.joblib'))
 # update_index()
-
-# # 检查随机性
-# for batch in train_iter:
-#     print("====================================")
-#     X = [i.item() for x in batch[0] for i in x]
-#     Y = [i.item() for y in batch[2] for i in y]
-#     print(src_vocab.to_tokens(X))
-#     print(tgt_vocab.to_tokens(Y))

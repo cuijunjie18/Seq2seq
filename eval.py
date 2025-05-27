@@ -4,9 +4,9 @@ from net_frame import *
 import joblib
 
 # 加载模型
-index = 12
+index = 8
 load_prefix = os.path.join('results','exp' + str(index))
-model_path = os.path.join(load_prefix,'model','seq2seq.pt')
+model_path = os.path.join(load_prefix,'model','seq2seq_transformer.pt')
 net = torch.load(model_path,weights_only = False)
 # print(net)
 
@@ -16,19 +16,19 @@ tgt_vocab = joblib.load(os.path.join(load_prefix,'vocabs/tgt_vocab.joblib'))
 print(len(src_vocab),len(tgt_vocab))
 
 # 构建对话
-device = try_gpu()
+device = try_gpu(i = 0)
 num_steps = 20
-input_str = "齐静春经典台词是什么"
-reply = predict_seq2seq(net,input_str,src_vocab,tgt_vocab,num_steps,device,token = 'char')[0]
+input_str = "I admire you ."
+reply = predict_seq2seq(net,input_str,src_vocab,tgt_vocab,num_steps,device,token = 'word')[0]
 print(reply)
 
-# # en-cn的测试
-# engs = ['I\'m free now.','I\'m innocent.','I\'m not sure.','I\'m pregnant.']	
-# cns = ['我现在有空了。','我是清白的。','我不确定。','我怀孕了。']
-# for eng,cn in zip(engs,cns):
-#     translation, attention_weight_seq = predict_seq2seq(
-#         net, eng, src_vocab, tgt_vocab, num_steps, device)
-#     print(f'{eng} => {translation}, bleu {bleu(translation, cn, k=2):.3f}')
+# en-cn的测试
+engs = ['I \' m free now .','I \' m innocent .','I \' m not sure .','I \' m pregnant .'] # 注意标点符合的插入方式	
+cns = ['我现在有空了。','我是清白的','我不确定','我怀孕了']
+for eng,cn in zip(engs,cns):
+    translation, attention_weight_seq = predict_seq2seq(
+        net, eng, src_vocab, tgt_vocab, num_steps, device, token = 'word')
+    print(f'{eng} => {translation}, bleu {bleu(translation, cn, k = 2,token = "char"):.3f}')
 
 # # en-fra的测试
 # engs = ['go .', "i lost .", 'he\'s calm .', 'i\'m home .']
